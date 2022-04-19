@@ -36,8 +36,7 @@ function onmessage(e) {
             data: e.data
         }
     }))
-    let resData = JSON.parse(e.data);
-    console.log(resData)
+    // let resData = JSON.parse(e.data);
 }
 
 export {
