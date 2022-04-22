@@ -4,8 +4,8 @@ import Router from 'vue-router'
 Vue.use(Router)
 
 import home from './components/home.vue'
-import chart from './components/chart.vue'
 import login from './components/login.vue'
+import register from './components/register.vue'
 
 export const routes = [
     {
@@ -19,14 +19,14 @@ export const routes = [
         component: login
     },
     {
+        path: '/register',
+        name: 'register',
+        component: register
+    },
+    {
         path: '/home',
         name: 'home',
         component: home
-    },
-    {
-        path: '/chart',
-        name: 'chart',
-        component: chart
     }
 ]
 

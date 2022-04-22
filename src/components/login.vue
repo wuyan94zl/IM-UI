@@ -1,19 +1,19 @@
 <template>
-  <div class="page-tabbar">
-    <div>
-      <mt-field
-        label="用户名"
-        placeholder="请输入用户名"
-        v-model="username"
-      ></mt-field>
-      <mt-field
-        label="密码"
-        placeholder="请输入密码"
-        type="password"
-        v-model="password"
-      ></mt-field>
-      <mt-button @click="login">登录</mt-button>
-    </div>
+  <div>
+    <mt-header fixed title="登录"> </mt-header>
+    <div style="margin-top: 40px"></div>
+    <mt-field
+      label="用户名"
+      placeholder="请输入用户名"
+      v-model="username"
+    ></mt-field>
+    <mt-field
+      label="密码"
+      placeholder="请输入密码"
+      type="password"
+      v-model="password"
+    ></mt-field>
+    <mt-button @click="login">登录</mt-button>
   </div>
 </template>
 <script>
@@ -21,8 +21,8 @@ export default {
   name: "login",
   data() {
     return {
-      username: "",
-      password: "",
+      username: "wuyan94zl",
+      password: "123456",
     };
   },
   mounted() {
@@ -40,7 +40,7 @@ export default {
       this.loading = true;
       this.$axios
         .post(
-          "http://localhost:8888/user/login",
+          "/user/login",
           {
             user_name: this.username,
             password: this.password,
@@ -58,7 +58,7 @@ export default {
             console.log(data);
             localStorage.setItem("_token", "Bearer " + data.data.access_token);
             localStorage.setItem("_userId", data.data.ws_token);
-            this.$router.push('/home');
+            this.$router.push("/home");
           } else {
             alert(data.message);
           }
@@ -68,5 +68,4 @@ export default {
   },
 };
 </script>
-<style>
-</style>
+<style></style>

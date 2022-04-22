@@ -1,22 +1,57 @@
 <template>
   <div>
-    <div
-      class="chatList"
-      style="padding: 5px"
-      v-for="(chart, k) in chartList"
-      :key="k"
-      @click="inChart(chart)"
+    <mt-header fixed title="聊天"> </mt-header>
+    <mt-cell
+      class="notice-list"
+      title="通知"
+      :label="noticeLabel"
+      is-link
+      @touchstart.native="noticeVisible = true"
     >
-      <p>{{ chart.nick_name }}---</p>
-      <p class="newMsg">
-        <span>用户消息</span><span style="float: right">用户消息</span>
-      </p>
-    </div>
-    <ul
-      v-infinite-scroll="loadMore"
-      infinite-scroll-disabled="loading"
-      infinite-scroll-distance="10"
-    ></ul>
+    </mt-cell>
+    <mt-popup v-model="noticeVisible" position="right">
+      <mt-header fixed :title="friend">
+        <mt-button @click="noticeVisible = false" slot="left" icon="back"
+          >返回</mt-button
+        >
+      </mt-header>
+      <mt-cell
+        style="margin: 40px 5px 5px 5px; width: 100%"
+        class="notice-list"
+        v-for="(item, k) in notice"
+        :key="k"
+        :title="item.nick_name"
+        :label="item.content + item.create_time"
+        :value="item.send_time"
+      >
+        <span v-if="item.status == 0">
+          <mt-button class="my-button" @click="firentHandle(item.id, k, 1)"
+            >同意</mt-button
+          >
+          <mt-button class="my-button" @click="firentHandle(item.id, k, 0)"
+            >拒绝</mt-button
+          >
+        </span>
+        <span v-else> {{ item.is_agree }} </span>
+      </mt-cell>
+    </mt-popup>
+    <mt-cell
+      class="notice-list"
+      v-for="(chat, k) in list"
+      :key="k"
+      :title="chat.nick_name"
+      :label="chat.content"
+      is-link
+      @touchstart.native="inChat(chat)"
+      :right="[
+        {
+          content: '移除会话',
+          style: { background: 'red', color: '#fff' },
+          handler: () => removeChat(k),
+        },
+      ]"
+    ></mt-cell>
+
     <mt-popup v-model="qiyeVisible" position="right">
       <mt-header fixed :title="friend">
         <mt-button @click="qiyeVisible = false" slot="left" icon="back"
@@ -68,8 +103,10 @@
 export default {
   data() {
     return {
-      userId: 0,
-      chartList: [],
+      userId: "",
+      list: [],
+      listMap: {},
+
       qiyeVisible: false,
       allMessages: {},
       messageList: [],
@@ -79,6 +116,8 @@ export default {
       message: "test",
 
       // 通知
+      noticeVisible: false,
+      noticeLabel: "暂无新通知",
       notice: [],
     };
   },
@@ -86,22 +125,86 @@ export default {
     this.userId = localStorage.getItem("_userId");
     //注册监听事件
     window.addEventListener("onmessageWS", this.getSocketData);
+    this.chatList();
+    this.noticeList();
   },
   methods: {
-    inChart(chart) {
-      // 进入聊天
-      this.channelId = chart.channel_id;
-      this.friend = chart.nick_name;
-      if (this.allMessages[chart.user_id]) {
-        this.messageList = this.allMessages[chart.user_id];
+    // 移除会话
+    removeChat(k) {
+      this.list.splice(k, 1);
+      this.cacheList();
+    },
+    // 会话列表排序
+    sortList() {
+      for (let i in this.list) {
+        this.listMap[this.list[i].user_id] = i;
+      }
+      this.cacheList();
+    },
+    // 会话列表本地缓存
+    cacheList() {
+      localStorage.setItem("_chatList", JSON.stringify(this.list));
+    },
+
+    /** notice methods */
+    // 通知列表
+    noticeList() {
+      this.loading = true;
+      this.$axios.post("/notice/list", {}).then((res) => {
+        let data = res.data;
+        this.notice = data.list;
+      });
+    },
+    // 通知消息处理
+    firentHandle(id, k, rlt) {
+      this.notice[k].content = "同意";
+      this.loading = true;
+      this.$axios
+        .post("/friend/handle", { action_type: rlt, action_log_id: id })
+        .then((res) => {
+          if (res.data.status == true) {
+            this.notice[k].status = 1;
+            this.notice[k].is_agree = "已同意";
+          } else {
+            this.notice[k].status = 1;
+            this.notice[k].is_agree = "已拒绝";
+          }
+        });
+    },
+    /** chat methods */
+    // 会话列表，本地缓存获取
+    chatList() {
+      // this.loading = true;
+      // this.$axios.post("/friend/list", {}).then((response) => {
+      //   // this.list = response.data.list;
+      //   JSON.stringify(response.data.list)
+      //   localStorage.setItem("_chatList",JSON.stringify(response.data.list));
+      //   // this.sortList();
+      //   this.loading = false;
+      // });
+
+      var cacheList = localStorage.getItem("_chatList");
+      console.log("cache chat:", cacheList);
+      if (cacheList) {
+        this.list = JSON.parse(cacheList);
+      }
+      console.log("cache chat:", this.list);
+      this.sortList();
+    },
+    // 进入会话聊天
+    inChat(chat) {
+      this.channelId = chat.channel_id;
+      this.friend = chat.nick_name;
+      if (this.allMessages[chat.user_id]) {
+        this.messageList = this.allMessages[chat.user_id];
       } else {
-        this.getMessage(chart.channel_id, chart.user_id);
+        this.getMessage(chat.channel_id, chat.user_id);
       }
       this.setScrollTop();
       this.qiyeVisible = true;
     },
+    // 初始化聊天记录
     getMessage(channel_id, user_id) {
-      // 初始化聊天消息
       this.loading = true;
       this.$axios
         .post("/message/list", {
@@ -115,50 +218,66 @@ export default {
           this.loading = false;
         });
     },
+    // 发送消息
     sendMessage() {
-      // 发送消息
       let msg =
         '{"channel_id":"' +
         this.channelId +
         '","content":"' +
         this.message +
         '","type" : 100}';
-      msg = msg.replace(/\n/g, "\\n");
+      msg = msg.replace(/\n/g, "\\n"); // 回车换行处理
       this.$SOCKET.sendMessage(msg);
     },
-    loadMore() {
-      // 聊天列表
-      this.loading = true;
-      this.$axios.post("/friend/list", {}).then((response) => {
-        this.chartList = response.data.list;
-        this.loading = false;
-      });
-    },
+    // 消息监听处理
     getSocketData(e) {
-      // 监听消息接受
       let msg = JSON.parse(e.detail.data);
       console.log("消息接受：", msg);
       switch (msg.type) {
-        case 100:
+        case 100: // 聊天消息
           if (msg.user_id == this.userId) {
             msg.type = 1;
+          } else {
+            let i = this.listMap[msg.user_id];
+            if (i != 0) {
+              let item = this.list[i];
+              this.list.splice(i, 1);
+              this.list.unshift(item);
+              this.sortList();
+            }
           }
+          this.list[0].content = msg.content;
           if (!this.messageList) {
             this.messageList = new Array();
           }
           this.messageList.push(msg);
           this.setScrollTop();
           break;
+        case 200: // 通知消息
+          var context = JSON.parse(msg.content);
+          context.nick_name = msg.nick_name;
+          this.noticeLabel = context.content;
+          if (!this.notice) {
+            this.notice = new Array();
+          }
+          this.notice.unshift(context);
+          break;
+        case 201: // 删除好友
+          var delId = 1;
+          if (this.userId == msg.content) {
+            delId = msg.content;
+          }
+          this.list.splice(this.listMap[delId], 1);
+          break;
         default:
-          this.notice.push(msg);
           break;
       }
     },
     setScrollTop() {
-    //   this.$nextTick(() => {
-    //     let list = this.$el.querySelector("#messageList");
-    //     list.scrollTop = list.scrollHeight;
-    //   });
+      //   this.$nextTick(() => {
+      //     let list = this.$el.querySelector("#messageList");
+      //     list.scrollTop = list.scrollHeight;
+      //   });
       let list = this.$el.querySelector("#messageList");
       setTimeout(function () {
         list.scrollTop = list.scrollHeight;

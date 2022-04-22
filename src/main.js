@@ -10,7 +10,8 @@ Vue.prototype.$SOCKET = Ws
 
 import axios from 'axios'
 const service = axios.create({
-  baseURL: "http://localhost:8888",
+  baseURL: "http://localhost:9999",
+  // baseURL: "http://chat-api.wuyan94zl.cn",
   timeout: 10000 // 请求超时时间
 });
 service.interceptors.request.use(config => {
