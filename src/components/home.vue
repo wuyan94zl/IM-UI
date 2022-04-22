@@ -6,7 +6,7 @@
         <mt-tab-container-item id="聊天">
           <v-chat></v-chat>
         </mt-tab-container-item>
-        <mt-tab-container-item id="好友">
+        <mt-tab-container-item id="朋友">
           <v-friend></v-friend>
         </mt-tab-container-item>
         <mt-tab-container-item id="我的">
@@ -16,7 +16,7 @@
 
       <mt-tabbar v-model="selected" fixed>
         <mt-tab-item id="聊天"> 聊天 </mt-tab-item>
-        <mt-tab-item id="好友"> 好友 </mt-tab-item>
+        <mt-tab-item id="朋友"> 朋友 </mt-tab-item>
         <mt-tab-item id="我的"> 我的 </mt-tab-item>
       </mt-tabbar>
     </div>
@@ -41,8 +41,12 @@ export default {
   mounted() {
     //注册监听事件
     window.addEventListener("onmessageWS", this.getSocketData);
+    window.addEventListener("addMessage", this.addMessage);
   },
   methods: {
+    addMessage() {
+      this.selected = '聊天'
+    },
     getSocketData(e) {
       // 监听消息接受
       let msg = JSON.parse(e.detail.data);

@@ -35,14 +35,14 @@
         <span v-else> {{ item.is_agree }} </span>
       </mt-cell>
     </mt-popup>
-    <mt-cell
+    <mt-cell-swipe
       class="notice-list"
       v-for="(chat, k) in list"
       :key="k"
       :title="chat.nick_name"
       :label="chat.content"
       is-link
-      @touchstart.native="inChat(chat)"
+      v-on:click.native="inChat(chat)"
       :right="[
         {
           content: '移除会话',
@@ -50,7 +50,7 @@
           handler: () => removeChat(k),
         },
       ]"
-    ></mt-cell>
+    ></mt-cell-swipe>
 
     <mt-popup v-model="qiyeVisible" position="right">
       <mt-header fixed :title="friend">
@@ -125,6 +125,7 @@ export default {
     this.userId = localStorage.getItem("_userId");
     //注册监听事件
     window.addEventListener("onmessageWS", this.getSocketData);
+    window.addEventListener("addMessage", this.addMessage);
     this.chatList();
     this.noticeList();
   },
@@ -136,8 +137,9 @@ export default {
     },
     // 会话列表排序
     sortList() {
+      this.listMap = {};
       for (let i in this.list) {
-        this.listMap[this.list[i].user_id] = i;
+        this.listMap[this.list[i].channel_id] = i;
       }
       this.cacheList();
     },
@@ -184,15 +186,17 @@ export default {
       // });
 
       var cacheList = localStorage.getItem("_chatList");
-      console.log("cache chat:", cacheList);
       if (cacheList) {
         this.list = JSON.parse(cacheList);
       }
-      console.log("cache chat:", this.list);
       this.sortList();
     },
     // 进入会话聊天
     inChat(chat) {
+      if (!this.listMap[chat.channel_id]) {
+        this.list.unshift(chat);
+      }
+
       this.channelId = chat.channel_id;
       this.friend = chat.nick_name;
       if (this.allMessages[chat.user_id]) {
@@ -202,6 +206,7 @@ export default {
       }
       this.setScrollTop();
       this.qiyeVisible = true;
+      this.sortList();
     },
     // 初始化聊天记录
     getMessage(channel_id, user_id) {
@@ -229,24 +234,32 @@ export default {
       msg = msg.replace(/\n/g, "\\n"); // 回车换行处理
       this.$SOCKET.sendMessage(msg);
     },
+    addMessage(e) {
+      this.inChat(e.detail.data);
+    },
     // 消息监听处理
     getSocketData(e) {
       let msg = JSON.parse(e.detail.data);
-      console.log("消息接受：", msg);
+      console.log("消息监听：", msg);
       switch (msg.type) {
         case 100: // 聊天消息
-          if (msg.user_id == this.userId) {
-            msg.type = 1;
+          if (this.listMap[msg.channel_id] == undefined) {
+            this.listMap[msg.channel_id] = 0;
+            this.list.unshift({
+              channel_id: msg.channel_id,
+              user_id: msg.user_id,
+              nick_name: msg.nick_name,
+            });
           } else {
-            let i = this.listMap[msg.user_id];
+            var i = this.listMap[msg.channel_id];
             if (i != 0) {
               let item = this.list[i];
               this.list.splice(i, 1);
               this.list.unshift(item);
-              this.sortList();
             }
           }
           this.list[0].content = msg.content;
+          this.sortList();
           if (!this.messageList) {
             this.messageList = new Array();
           }
@@ -263,11 +276,7 @@ export default {
           this.notice.unshift(context);
           break;
         case 201: // 删除好友
-          var delId = 1;
-          if (this.userId == msg.content) {
-            delId = msg.content;
-          }
-          this.list.splice(this.listMap[delId], 1);
+          this.list.splice(this.listMap[msg.channel_id], 1);
           break;
         default:
           break;

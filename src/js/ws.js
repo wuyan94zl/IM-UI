@@ -47,7 +47,6 @@ function onmessage(e) {
 
 function wsHeartBeat(){
     setTimeout( () => {
-        // console.log("心跳检测",websocket.readyState);
         if (websocket.readyState != 1){
             initWebSocket()
         }

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <mt-header fixed title="好友">
+    <mt-header fixed title="朋友">
       <mt-button @click="addVisible = true" slot="right" icon="add"
         >添加</mt-button
       >
@@ -32,14 +32,14 @@
         </mt-search>
       </div>
     </mt-popup>
-    <mt-cell-swipe
+    <mt-cell
       class="notice-list"
       v-for="(friend, k) in friends"
       :key="k"
       :title="friend.nick_name"
       is-link
-      @touchstart.native="info(friend)"
-    ></mt-cell-swipe>
+      v-on:click.native="info(friend)"
+    ></mt-cell>
     <mt-popup v-model="infoVisible" position="right">
       <mt-header fixed title="信息">
         <mt-button @click="infoVisible = false" slot="left" icon="back"
@@ -48,10 +48,22 @@
       </mt-header>
       <div style="margin-top: 40px"></div>
       <mt-cell title="昵称">{{ friend.nick_name }}</mt-cell>
-      <br/>
-      <mt-button type="primary" class="my-button" size="large" @click="joinMessage(friend)">发送消息</mt-button>
-      <br/>
-      <mt-button type="danger" class="my-button" size="large" @click="delFriend(friend)">删除朋友</mt-button>
+      <br />
+      <mt-button
+        type="primary"
+        class="my-button"
+        size="large"
+        @click="joinMessage(friend)"
+        >发送消息</mt-button
+      >
+      <br />
+      <mt-button
+        type="danger"
+        class="my-button"
+        size="large"
+        @click="delFriend(friend)"
+        >删除朋友</mt-button
+      >
     </mt-popup>
   </div>
 </template>
@@ -93,7 +105,6 @@ export default {
       this.$axios.post("/friend/list", {}).then((res) => {
         let data = res.data.list;
         this.friends = data;
-        console.log("friends", this.friends);
       });
     },
     // 添加朋友
@@ -101,22 +112,26 @@ export default {
       if (isFriend == 1) {
         return;
       }
-      this.$axios
-        .post("/friend/add", {
-          friend_id: id,
-        })
-        .then((res) => {
-          console.log(res);
+      this.$axios.post("/friend/add", { friend_id: id }).then((res) => {
+        let data = res.data;
+        this.$toast({
+          message: data.msg,
+          position: "center",
+          duration: 1000,
         });
+      });
     },
     // 删除朋友
     delFriend(friend) {
-      console.log("friend delete", friend);
       this.$axios
         .post("/friend/del", { friend_id: friend.user_id })
         .then((res) => {
           let data = res.data;
-          console.log("friend delete", data);
+          this.$toast({
+            message: data.msg,
+            position: "center",
+            duration: 1000,
+          });
         });
     },
     // 朋友详情
@@ -125,8 +140,15 @@ export default {
       this.infoVisible = true;
     },
     // 进入会话
-    joinMessage(){
-      
+    joinMessage(friend) {
+      window.dispatchEvent(
+        new CustomEvent("addMessage", {
+          detail: {
+            data: friend,
+          },
+        })
+      );
+      this.infoVisible = false;
     },
     // 消息监听处理
     getSocketData(e) {
