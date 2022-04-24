@@ -50,7 +50,7 @@ export default {
       this.$router.push("/login");
     },
     register() {
-      if (this.username == "" || this.password == "" || this.nickname){
+      if (this.username == "" || this.password == "" || this.nickname == ""){
         this.$toast({
               message: "请输入完整的注册信息！",
               position: "center",

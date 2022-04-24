@@ -263,10 +263,11 @@ export default {
 
       this.channelId = chat.channel_id;
       this.friend = chat.nick_name;
-      if (this.allMessages[chat.user_id]) {
-        this.messageList = this.allMessages[chat.user_id];
+      let msgList = localStorage.getItem(chat.channel_id);
+      if (msgList) {
+        this.messageList = JSON.parse(msgList);
       } else {
-        this.getMessage(chat.channel_id);
+        this.messageList = [];
       }
       this.setScrollTop();
       this.qiyeVisible = true;
@@ -305,6 +306,14 @@ export default {
     },
     // 发送消息
     sendMessage() {
+      if (this.message == "") {
+        this.$toast({
+          message: "请输入发送内容",
+          position: "center",
+          duration: 1000,
+        });
+        return;
+      }
       let msg =
         '{"channel_id":"' +
         this.channelId +
