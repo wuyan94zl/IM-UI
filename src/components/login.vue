@@ -34,8 +34,8 @@ export default {
   name: "login",
   data() {
     return {
-      username: "wuyan94zl",
-      password: "123456",
+      username: "",
+      password: "",
     };
   },
   mounted() {
@@ -59,6 +59,14 @@ export default {
       this.$router.push("/register");
     },
     login() {
+      if (this.username == "" || this.password == ""){
+        this.$toast({
+              message: "请输入用户名和密码！",
+              position: "center",
+              duration: 1000,
+            });
+        return
+      }
       this.loading = true;
       this.$axios
         .post("/user/login", {

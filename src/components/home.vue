@@ -15,9 +15,20 @@
       </mt-tab-container>
 
       <mt-tabbar v-model="selected" fixed>
-        <mt-tab-item id="聊天"> 聊天 </mt-tab-item>
-        <mt-tab-item id="朋友"> 朋友 </mt-tab-item>
-        <mt-tab-item id="我的"> 我的 </mt-tab-item>
+        <mt-tab-item id="聊天">
+          <div style="float: left; margin-left: 40%">
+            <i class="iconfont icon-chat"></i><br />聊天
+          </div>
+          <mt-badge size="small" color="red" v-if="unreadNum > 0">{{
+            unreadNum
+          }}</mt-badge>
+        </mt-tab-item>
+        <mt-tab-item id="朋友">
+          <i class="iconfont icon-friend"></i><br />朋友
+        </mt-tab-item>
+        <mt-tab-item id="我的">
+          <i class="iconfont icon-me"></i><br />我的
+        </mt-tab-item>
       </mt-tabbar>
     </div>
   </div>
@@ -31,6 +42,7 @@ export default {
   data() {
     return {
       selected: "聊天",
+      unreadNum: 0,
     };
   },
   components: {
@@ -40,12 +52,21 @@ export default {
   },
   mounted() {
     //注册监听事件
+    window.addEventListener("unreadUpd", this.unreadUpd);
     window.addEventListener("onmessageWS", this.getSocketData);
     window.addEventListener("addMessage", this.addMessage);
   },
   methods: {
     addMessage() {
-      this.selected = '聊天'
+      this.selected = "聊天";
+    },
+    unreadUpd(data) {
+      console.log("home readnum", data);
+      if (data.detail.all) {
+        this.unreadNum = data.detail.num;
+      } else {
+        this.unreadNum += data.detail.num;
+      }
     },
     getSocketData(e) {
       // 监听消息接受
@@ -60,4 +81,5 @@ export default {
 </script>
 <style>
 @import "../css/app.css";
+@import url("//at.alicdn.com/t/font_3351369_iat9tn6fxd.css");
 </style>

@@ -50,6 +50,14 @@ export default {
       this.$router.push("/login");
     },
     register() {
+      if (this.username == "" || this.password == "" || this.nickname){
+        this.$toast({
+              message: "请输入完整的注册信息！",
+              position: "center",
+              duration: 1000,
+            });
+        return
+      }
       this.loading = true;
       this.$axios
         .post("/user/register", {

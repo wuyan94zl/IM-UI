@@ -114,11 +114,13 @@ export default {
       }
       this.$axios.post("/friend/add", { friend_id: id }).then((res) => {
         let data = res.data;
+        console.log("添加好友请求：", data);
         this.$toast({
-          message: data.msg,
+          message: data.message,
           position: "center",
           duration: 1000,
         });
+        this.addVisible = false;
       });
     },
     // 删除朋友
@@ -127,11 +129,13 @@ export default {
         .post("/friend/del", { friend_id: friend.user_id })
         .then((res) => {
           let data = res.data;
+          console.log("删除好友请求：", data);
           this.$toast({
-            message: data.msg,
+            message: data.message,
             position: "center",
             duration: 1000,
           });
+          this.infoVisible = false;
         });
     },
     // 朋友详情
@@ -155,14 +159,14 @@ export default {
       let msg = JSON.parse(e.detail.data);
       switch (msg.type) {
         case 201: // 添加好友
-          if (msg.content == "1") {
-            this.friendList();
-          }
+          // if (msg.content == "1") {
+          this.friendList();
+          // }
           break;
         case 202: // 删除好友
-          if (msg.content == "1") {
-            this.friendList();
-          }
+          // if (msg.content == "1") {
+          this.friendList();
+          // }
           break;
       }
     },

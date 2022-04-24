@@ -44,6 +44,7 @@ Vue.use(MintUI)
 Vue.config.productionTip = false
 
 router.beforeEach((to, from, next) => {
+  document.title = "go-zero chat"
   if (to.name == 'login' || to.name == 'register') {
     next()
   } else {
