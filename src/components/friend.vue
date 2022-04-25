@@ -145,6 +145,8 @@ export default {
     },
     // 进入会话
     joinMessage(friend) {
+      friend.unread = 0;
+      friend.content = "";
       window.dispatchEvent(
         new CustomEvent("addMessage", {
           detail: {
@@ -159,14 +161,12 @@ export default {
       let msg = JSON.parse(e.detail.data);
       switch (msg.type) {
         case 201: // 添加好友
-          // if (msg.content == "1") {
-          this.friendList();
-          // }
+          if (msg.is_agree == "已同意") {
+            this.friendList();
+          }
           break;
         case 202: // 删除好友
-          // if (msg.content == "1") {
           this.friendList();
-          // }
           break;
       }
     },

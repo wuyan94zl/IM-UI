@@ -23,7 +23,7 @@
           v-for="(item, k) in notice"
           :key="k"
           :title="item.nick_name"
-          :label="item.content + item.create_time"
+          :label="item.content"
           :value="item.send_time"
           is-link
         >
@@ -171,30 +171,6 @@ export default {
       );
     },
 
-    /** 会话管理 */
-    // 移除会话
-    removeChat(k) {
-      this.list.splice(k, 1);
-      this.cacheList();
-    },
-    // 会话列表排序
-    sortList(add) {
-      this.listMap = {};
-      let unreadNum = 0;
-      for (let i in this.list) {
-        this.listMap[this.list[i].channel_id] = i;
-        unreadNum += this.list[i].unread;
-      }
-      if (add == 1) {
-        this.updHomeUnreadNum(unreadNum + this.noticeItem.unReadNum, true);
-      }
-      this.cacheList();
-    },
-    // 会话列表本地缓存
-    cacheList() {
-      localStorage.setItem("_chatList", JSON.stringify(this.list));
-    },
-
     /** notice methods */
     // 进入notice
     inNotice() {
@@ -213,15 +189,20 @@ export default {
       } else {
         this.noticeItem = { label: "暂无新通知", unReadNum: 0 };
       }
-      this.loading = true;
-      this.$axios.post("/notice/list", {}).then((res) => {
-        let data = res.data;
-        this.notice = data.list;
-      });
+      let noticeList = localStorage.getItem("_noticeList");
+      if (noticeList) {
+        this.notice = JSON.parse(noticeList);
+      } else {
+        this.notice = [];
+      }
+      // this.loading = true;
+      // this.$axios.post("/notice/list", {}).then((res) => {
+      //   let data = res.data;
+      //   this.notice = data.list;
+      // });
     },
     // 通知消息处理
     firentHandle(id, k, rlt) {
-      this.notice[k].content = "同意";
       this.loading = true;
       this.$axios
         .post("/friend/handle", { action_type: rlt, action_log_id: id })
@@ -229,80 +210,97 @@ export default {
           if (res.data.status == true) {
             this.notice[k].status = 1;
             this.notice[k].is_agree = "已同意";
+            this.friend()
           } else {
             this.notice[k].status = 1;
             this.notice[k].is_agree = "已拒绝";
           }
+          localStorage.setItem("_noticeList", JSON.stringify(this.notice));
         });
+    },
+
+    /** 会话管理 */
+    // 移除会话
+    removeChat(k) {
+      this.list.splice(k, 1);
+      this.sortList(1);
+    },
+    // 会话列表排序
+    sortList(all) {
+      this.listMap = {};
+      let unreadNum = 0;
+      for (let i in this.list) {
+        this.listMap[this.list[i].channel_id] = i;
+        unreadNum += this.list[i].unread;
+      }
+      if (all == 1) {
+        this.updHomeUnreadNum(unreadNum + this.noticeItem.unReadNum, true);
+      }
+      this.setCacheList();
+    },
+    // 会话列表本地缓存
+    getCacheList() {
+      var cacheList = localStorage.getItem("_chatList");
+      if (cacheList) {
+        this.list = JSON.parse(cacheList);
+      } else {
+        this.list = [];
+      }
+      this.sortList(1);
+    },
+    setCacheList() {
+      localStorage.setItem("_chatList", JSON.stringify(this.list));
     },
 
     /** chat methods */
     // 会话列表，本地缓存获取
     chatList() {
-      // this.loading = true;
-      // this.$axios.post("/friend/list", {}).then((response) => {
-      //   // this.list = response.data.list;
-      //   JSON.stringify(response.data.list)
-      //   localStorage.setItem("_chatList",JSON.stringify(response.data.list));
-      //   // this.sortList();
-      //   this.loading = false;
-      // });
-      var cacheList = localStorage.getItem("_chatList");
-      if (cacheList) {
-        this.list = JSON.parse(cacheList);
-      }
-      this.sortList(1);
+      this.getCacheList("get");
     },
     // 进入会话聊天
     inChat(chat) {
+      console.log("inchat params:", chat);
       this.updHomeUnreadNum(chat.unread * -1);
       chat.unread = 0;
       if (!this.listMap[chat.channel_id]) {
-        this.list.unshift(chat);
+        this.list.unshift({
+          channel_id: chat.channel_id,
+          user_id: chat.user_id,
+          nick_name: chat.nick_name,
+          unread: 0,
+        });
       }
-
       this.channelId = chat.channel_id;
       this.friend = chat.nick_name;
-      let msgList = localStorage.getItem(chat.channel_id);
-      if (msgList) {
-        this.messageList = JSON.parse(msgList);
-      } else {
-        this.messageList = [];
-      }
-      this.setScrollTop();
+      this.messageList = this.getCacheMessage(chat.channel_id); // 消息初始化
+      this.setScrollTop(); // 消息置底
       this.qiyeVisible = true;
-      this.unreadStatData[chat.channel_id] = 0;
-      this.sortList();
+      this.sortList(); // 会话排序
     },
-    // 初始化聊天记录
-    getMessage(channel_id) {
-      // this.loading = true;
-      // this.$axios
-      //   .post("/message/list", {
-      //     channel_id: channel_id,
-      //     min_message_id: 0,
-      //   })
-      //   .then((res) => {
-      //     let data = res.data.list;
-      //     this.allMessages[user_id] = data;
-      //     this.messageList = data;
-      //     this.loading = false;
-      //   });
+    // 获取channel缓存数据
+    getCacheMessage(channel_id) {
       let msgList = localStorage.getItem(channel_id);
       if (msgList) {
-        this.messageList = JSON.parse(msgList);
+        return JSON.parse(msgList);
       } else {
-        this.messageList = [];
+        return [];
       }
     },
-    cacheMessageList(channel_id, msg) {
-      let c = localStorage.getItem(channel_id);
-      var list = [];
-      if (c) {
-        list = JSON.parse(c);
+    setCacheMessage(channel_id, msg) {
+      localStorage.setItem(channel_id, JSON.stringify(msg));
+    },
+    // 聊天数据处理
+    handleMessageList(msg) {
+      let messageList = [];
+      if (this.qiyeVisible == true && this.channelId == msg.channel_id) {
+        this.messageList.push(msg);
+        messageList = this.messageList;
+        this.setScrollTop();
+      } else {
+        messageList = this.getCacheMessage(msg.channel_id);
+        messageList.push(msg);
       }
-      list.push(msg);
-      localStorage.setItem(channel_id, JSON.stringify(list));
+      this.setCacheMessage(msg.channel_id, messageList);
     },
     // 发送消息
     sendMessage() {
@@ -333,8 +331,7 @@ export default {
         case 100:
           // 不存在该会话
           if (this.listMap[msg.channel_id] == undefined) {
-            this.listMap[msg.channel_id] = 0; // 排序索引
-            // 添加到会话列表
+            // this.listMap[msg.channel_id] = 0; // 排序索引
             this.list.unshift({
               channel_id: msg.channel_id,
               user_id: msg.user_id,
@@ -350,36 +347,39 @@ export default {
               this.list.unshift(item);
             }
           }
+          // 消息处理
+          this.handleMessageList(msg);
+
           // 最新消息赋值
           this.list[0].content = msg.content;
-          // 未读消息处理
+          // 未读消息数量处理
           this.unreadStat(msg);
           // 排序处理
           this.sortList();
-          if (!this.messageList) {
-            this.messageList = new Array();
-          }
-          // 消息添加与置底
-          this.messageList.push(msg);
-          this.cacheMessageList(msg.channel_id, msg);
-          if (this.qiyeVisible == true && this.channelId == msg.channel_id) {
-            this.setScrollTop();
-          }
           break;
         case 200: // 通知消息
           var context = JSON.parse(msg.content);
-          context.nick_name = msg.detail.nick_name;
-          context.unread = this.noticeUnReadNum;
+          console.log("通知消息：",context);
+          var noticeItem = {
+            id: context.Id,
+            nick_name: msg.nick_name,
+            content: context.Content,
+            create_time: context.CreatTime,
+            send_time: msg.send_time,
+            status: context.Status,
+            is_agree: context.IsAgree,
+          };
           if (!this.notice) {
-            this.notice = new Array();
+            this.notice = [];
           }
-          this.notice.unshift(context);
-          this.noticeItem.label = context.content;
+          this.notice.unshift(noticeItem);
+          this.noticeItem.label = noticeItem.content;
           if (msg.user_id != this.userId) {
             this.noticeItem.unReadNum += 1;
             this.updHomeUnreadNum(1);
           }
           localStorage.setItem("_noticeItem", JSON.stringify(this.noticeItem));
+          localStorage.setItem("_noticeList", JSON.stringify(this.notice));
           break;
         case 202: // 删除好友
           this.list.splice(this.listMap[msg.channel_id], 1);
