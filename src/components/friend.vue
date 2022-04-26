@@ -85,6 +85,7 @@ export default {
   mounted() {
     //注册监听事件
     window.addEventListener("onmessageWS", this.getSocketData);
+    window.addEventListener("friendList", this.friendList);
     this.friendList();
   },
   watch: {
@@ -160,8 +161,9 @@ export default {
     getSocketData(e) {
       let msg = JSON.parse(e.detail.data);
       switch (msg.type) {
-        case 201: // 添加好友
-          if (msg.is_agree == "已同意") {
+        case 200: // 添加好友
+          var context = JSON.parse(msg.content);
+          if (context.IsAgree == "已同意") {
             this.friendList();
           }
           break;

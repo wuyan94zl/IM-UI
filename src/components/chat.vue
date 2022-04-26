@@ -1,17 +1,24 @@
 <template>
   <div>
     <mt-header fixed title="聊天"> </mt-header>
-    <mt-cell
+    <mt-cell-swipe
       class="notice-list"
       title="通知"
       :label="noticeItem.label"
       is-link
       v-on:click.native="inNotice"
+      :right="[
+        {
+          content: '清空通知',
+          style: { background: 'red', color: '#fff' },
+          handler: () => clearNotice(),
+        },
+      ]"
     >
       <mt-badge size="small" color="red" v-if="noticeItem.unReadNum > 0"
         >未读 {{ noticeItem.unReadNum }}</mt-badge
       >
-    </mt-cell>
+    </mt-cell-swipe>
     <mt-popup v-model="noticeVisible" position="right">
       <mt-header fixed :title="friend">
         <mt-button @click="noticeVisible = false" slot="left" icon="back"
@@ -130,8 +137,6 @@ export default {
         label: "",
         unReadNum: 0,
       },
-      noticeLabel: "暂无新通知",
-      noticeUnReadNum: 0,
       notice: [],
     };
   },
@@ -173,6 +178,12 @@ export default {
 
     /** notice methods */
     // 进入notice
+    clearNotice() {
+      localStorage.removeItem("_noticeItem");
+      this.notice = [];
+      this.noticeItem.label = "";
+      this.noticeItem.unReadNum = 0;
+    },
     inNotice() {
       if (this.noticeItem.unReadNum > 0) {
         this.updHomeUnreadNum(this.noticeItem.unReadNum * -1);
@@ -210,7 +221,11 @@ export default {
           if (res.data.status == true) {
             this.notice[k].status = 1;
             this.notice[k].is_agree = "已同意";
-            this.friend()
+            window.dispatchEvent(
+              new CustomEvent("friendList", {
+                detail: {},
+              })
+            );
           } else {
             this.notice[k].status = 1;
             this.notice[k].is_agree = "已拒绝";
@@ -222,6 +237,7 @@ export default {
     /** 会话管理 */
     // 移除会话
     removeChat(k) {
+      localStorage.removeItem(this.list[k].channel_id);
       this.list.splice(k, 1);
       this.sortList(1);
     },
@@ -359,7 +375,6 @@ export default {
           break;
         case 200: // 通知消息
           var context = JSON.parse(msg.content);
-          console.log("通知消息：",context);
           var noticeItem = {
             id: context.Id,
             nick_name: msg.nick_name,
