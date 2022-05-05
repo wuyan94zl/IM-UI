@@ -28,7 +28,7 @@ export default {
       localStorage.removeItem("_token");
       localStorage.removeItem("_userId");
       localStorage.removeItem("_chatList");
-      this.$router.push("/login");
+      this.$router.go(0)
     },
   },
 };

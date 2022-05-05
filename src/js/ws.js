@@ -3,9 +3,10 @@ initWebSocket();
 wsHeartBeat();
 function initWebSocket() {
     let user = localStorage.getItem('_userId');
-    if (user !== '' && user !== undefined) { // 在用户未登录的情况下不进行连接
+    if (user !== '' && user !== null) { // 在用户未登录的情况下不进行连接
+        let wsUrl =  process.env.VUE_APP_WS_SERVER_URL
         // 建立连接
-        websocket = new WebSocket('ws://localhost:9988/ws?_token='+user);
+        websocket = new WebSocket(wsUrl + '?_token='+user);
         // websocket = new WebSocket('ws://chat-ws.wuyan94zl.cn/ws?_token=' + user);
         // 连接成功
         websocket.onopen = onopen
@@ -47,11 +48,11 @@ function onmessage(e) {
 
 function wsHeartBeat(){
     setTimeout( () => {
-        if (websocket.readyState != 1){
+        if (websocket == undefined || websocket.readyState != 1){
             initWebSocket()
         }
         wsHeartBeat()
-    },5000)
+    },3000)
 }
 
 export {

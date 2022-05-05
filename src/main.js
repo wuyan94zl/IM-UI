@@ -7,10 +7,10 @@ Vue.use(router)
 
 import * as Ws from './js/ws.js'
 Vue.prototype.$SOCKET = Ws
-
 import axios from 'axios'
+let baseURL = process.env.VUE_APP_API_SERVER_URL
 const service = axios.create({
-  baseURL: "http://localhost:9999",
+  baseURL: baseURL,
   // baseURL: "http://chat-api.wuyan94zl.cn",
   timeout: 10000 // 请求超时时间
 });
@@ -21,6 +21,7 @@ service.interceptors.request.use(config => {
   }
   return config
 })
+
 service.interceptors.response.use(
   response => {
     return response
