@@ -94,7 +94,7 @@ export default {
         this.$axios
           .post("/user/list", { keyword: this.keyword })
           .then((res) => {
-            let data = res.data.list;
+            let data = res.data.data.list;
             this.result = data;
           });
       }
@@ -104,7 +104,7 @@ export default {
     // 朋友列表
     friendList() {
       this.$axios.post("/friend/list", {}).then((res) => {
-        let data = res.data.list;
+        let data = res.data.data.list;
         this.friends = data;
       });
     },
@@ -114,7 +114,7 @@ export default {
         return;
       }
       this.$axios.post("/friend/add", { friend_id: id }).then((res) => {
-        let data = res.data;
+        let data = res.data.data;
         console.log("添加好友请求：", data);
         this.$toast({
           message: data.message,
@@ -129,7 +129,7 @@ export default {
       this.$axios
         .post("/friend/del", { friend_id: friend.user_id })
         .then((res) => {
-          let data = res.data;
+          let data = res.data.data;
           console.log("删除好友请求：", data);
           this.$toast({
             message: data.message,
@@ -148,6 +148,8 @@ export default {
     joinMessage(friend) {
       friend.unread = 0;
       friend.content = "";
+      friend.title = friend.nick_name;
+      friend.type = 100;
       window.dispatchEvent(
         new CustomEvent("addMessage", {
           detail: {
@@ -161,13 +163,7 @@ export default {
     getSocketData(e) {
       let msg = JSON.parse(e.detail.data);
       switch (msg.type) {
-        case 200: // 添加好友
-          var context = JSON.parse(msg.content);
-          if (context.IsAgree == "已同意") {
-            this.friendList();
-          }
-          break;
-        case 202: // 删除好友
+        case 201: // 好友更新
           this.friendList();
           break;
       }

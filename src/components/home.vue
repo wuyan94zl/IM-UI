@@ -9,6 +9,10 @@
         <mt-tab-container-item id="朋友">
           <v-friend></v-friend>
         </mt-tab-container-item>
+        <mt-tab-container-item id="群组">
+          <v-group></v-group>
+        </mt-tab-container-item>
+        
         <mt-tab-container-item id="我的">
           <v-about></v-about>
         </mt-tab-container-item>
@@ -26,6 +30,9 @@
         <mt-tab-item id="朋友">
           <i class="iconfont icon-friend"></i><br />朋友
         </mt-tab-item>
+        <mt-tab-item id="群组">
+          <i class="iconfont icon-friend"></i><br />群组
+        </mt-tab-item>
         <mt-tab-item id="我的">
           <i class="iconfont icon-me"></i><br />我的
         </mt-tab-item>
@@ -37,6 +44,7 @@
 import vChat from "./chat.vue";
 import vFriend from "./friend.vue";
 import vAbout from "./about.vue";
+import vGroup from "./group.vue";
 export default {
   name: "login",
   data() {
@@ -49,6 +57,7 @@ export default {
     vChat,
     vFriend,
     vAbout,
+    vGroup,
   },
   mounted() {
     //注册监听事件

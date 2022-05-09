@@ -1,8 +1,8 @@
 <template>
   <div>
     <mt-header fixed title="个人中心"> </mt-header>
-    <mt-cell title="用户账号">{{ info.UserName }}</mt-cell>
-    <mt-cell title="用户昵称">{{ info.NickName }}</mt-cell>
+    <mt-cell title="用户账号">{{ info.user_name }}</mt-cell>
+    <mt-cell title="用户昵称">{{ info.nick_name }}</mt-cell>
     <mt-button type="danger" size="large" @click="logout">退出</mt-button>
   </div>
 </template>

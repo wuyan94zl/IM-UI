@@ -29,16 +29,20 @@
         <mt-cell
           v-for="(item, k) in notice"
           :key="k"
-          :title="item.nick_name"
-          :label="item.content"
+          :title="item.content"
+          :label="item.note"
           :value="item.send_time"
           is-link
         >
           <span v-if="item.status == 0">
-            <mt-button class="my-button" @click="firentHandle(item.id, k, 1)"
+            <mt-button
+              class="my-button"
+              @click="firentHandle(item.id, k, 1, item.type)"
               >同意</mt-button
             >
-            <mt-button class="my-button" @click="firentHandle(item.id, k, 0)"
+            <mt-button
+              class="my-button"
+              @click="firentHandle(item.id, k, 0, item.type)"
               >拒绝</mt-button
             >
           </span>
@@ -50,7 +54,7 @@
       class="notice-list"
       v-for="(chat, k) in list"
       :key="k"
-      :title="chat.nick_name"
+      :title="chat.title"
       :label="chat.content"
       is-link
       v-on:click.native="inChat(chat)"
@@ -68,7 +72,7 @@
     </mt-cell-swipe>
 
     <mt-popup v-model="qiyeVisible" position="right">
-      <mt-header fixed :title="friend">
+      <mt-header fixed :title="title">
         <mt-button @click="qiyeVisible = false" slot="left" icon="back"
           >返回</mt-button
         >
@@ -127,6 +131,8 @@ export default {
       messageList: [],
       unreadStatData: {},
 
+      title: "",
+      type: 100,
       friend: "",
       channelId: "",
       message: "",
@@ -180,6 +186,7 @@ export default {
     // 进入notice
     clearNotice() {
       localStorage.removeItem("_noticeItem");
+      localStorage.removeItem("_noticeList");
       this.notice = [];
       this.noticeItem.label = "";
       this.noticeItem.unReadNum = 0;
@@ -213,25 +220,48 @@ export default {
       // });
     },
     // 通知消息处理
-    firentHandle(id, k, rlt) {
+    firentHandle(id, k, rlt, type) {
       this.loading = true;
-      this.$axios
-        .post("/friend/handle", { action_type: rlt, action_log_id: id })
-        .then((res) => {
-          if (res.data.status == true) {
-            this.notice[k].status = 1;
-            this.notice[k].is_agree = "已同意";
-            window.dispatchEvent(
-              new CustomEvent("friendList", {
-                detail: {},
-              })
-            );
-          } else {
-            this.notice[k].status = 1;
-            this.notice[k].is_agree = "已拒绝";
-          }
-          localStorage.setItem("_noticeList", JSON.stringify(this.notice));
-        });
+      switch (type) {
+        case 1:
+          this.$axios
+            .post("/friend/handle", { action_type: rlt, action_log_id: id })
+            .then((res) => {
+              if (res.data.data.status == true) {
+                this.notice[k].status = 1;
+                this.notice[k].is_agree = "已同意";
+                window.dispatchEvent(
+                  new CustomEvent("friendList", {
+                    detail: {},
+                  })
+                );
+              } else {
+                this.notice[k].status = 1;
+                this.notice[k].is_agree = "已拒绝";
+              }
+              localStorage.setItem("_noticeList", JSON.stringify(this.notice));
+            });
+          break;
+        case 2:
+          this.$axios
+            .post("/group/join/handle", { action_type: rlt, join_id: id })
+            .then((res) => {
+              if (res.data.data.status == true) {
+                this.notice[k].status = 1;
+                this.notice[k].is_agree = "已同意";
+                window.dispatchEvent(
+                  new CustomEvent("friendList", {
+                    detail: {},
+                  })
+                );
+              } else {
+                this.notice[k].status = 1;
+                this.notice[k].is_agree = "已拒绝";
+              }
+              localStorage.setItem("_noticeList", JSON.stringify(this.notice));
+            });
+          break;
+      }
     },
 
     /** 会话管理 */
@@ -280,6 +310,8 @@ export default {
       chat.unread = 0;
       if (!this.listMap[chat.channel_id]) {
         this.list.unshift({
+          title: chat.title,
+          type: chat.type,
           channel_id: chat.channel_id,
           user_id: chat.user_id,
           nick_name: chat.nick_name,
@@ -288,6 +320,8 @@ export default {
       }
       this.channelId = chat.channel_id;
       this.friend = chat.nick_name;
+      this.title = chat.title;
+      this.type = chat.type;
       this.messageList = this.getCacheMessage(chat.channel_id); // 消息初始化
       this.setScrollTop(); // 消息置底
       this.qiyeVisible = true;
@@ -331,9 +365,13 @@ export default {
       let msg =
         '{"channel_id":"' +
         this.channelId +
+        '","channel_title":"' +
+        this.title +
         '","content":"' +
         this.message +
-        '","type" : 100}';
+        '","type" : ' +
+        this.type +
+        "}";
       msg = msg.replace(/\n/g, "\\n"); // 回车换行处理
       this.message = "";
       this.$SOCKET.sendMessage(msg);
@@ -345,14 +383,17 @@ export default {
       console.log("消息监听：", msg);
       switch (msg.type) {
         case 100:
+        case 101:
           // 不存在该会话
           if (this.listMap[msg.channel_id] == undefined) {
             // this.listMap[msg.channel_id] = 0; // 排序索引
             this.list.unshift({
               channel_id: msg.channel_id,
               user_id: msg.user_id,
+              title: msg.channel_title,
               nick_name: msg.detail.nick_name,
               unread: 0,
+              type: msg.type,
             });
           } else {
             // 排序处理
@@ -373,12 +414,16 @@ export default {
           // 排序处理
           this.sortList();
           break;
-        case 200: // 通知消息
+        case 200:
+        case 201:
+        case 202:
           var context = JSON.parse(msg.content);
           var noticeItem = {
             id: context.Id,
             nick_name: msg.nick_name,
-            content: context.Content,
+            type: context.Tp,
+            content: context.Tp == 1 ? "好友通知消息" : "群组通知消息",
+            note: context.Content,
             create_time: context.CreatTime,
             send_time: msg.send_time,
             status: context.Status,
@@ -395,10 +440,10 @@ export default {
           }
           localStorage.setItem("_noticeItem", JSON.stringify(this.noticeItem));
           localStorage.setItem("_noticeList", JSON.stringify(this.notice));
-          break;
-        case 202: // 删除好友
-          this.list.splice(this.listMap[msg.channel_id], 1);
-          this.sortList(1);
+          if (msg.type != 200) {
+            this.list.splice(this.listMap[msg.channel_id], 1);
+            this.sortList(1);
+          }
           break;
         default:
           break;
