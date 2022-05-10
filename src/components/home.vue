@@ -31,7 +31,7 @@
           <i class="iconfont icon-friend"></i><br />朋友
         </mt-tab-item>
         <mt-tab-item id="群组">
-          <i class="iconfont icon-friend"></i><br />群组
+          <i class="iconfont icon-qunzuduoren"></i><br />群组
         </mt-tab-item>
         <mt-tab-item id="我的">
           <i class="iconfont icon-me"></i><br />我的
@@ -90,5 +90,5 @@ export default {
 </script>
 <style>
 @import "../css/app.css";
-@import url("//at.alicdn.com/t/font_3351369_iat9tn6fxd.css");
+@import url("//at.alicdn.com/t/font_3351369_q6rdxosf90c.css");
 </style>

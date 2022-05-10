@@ -99,11 +99,20 @@
       >
       <br />
       <mt-button
+        v-if="group.is_manager == 1"
         type="danger"
         class="my-button"
         size="large"
         @click="delGroup(group)"
-        >删除朋友</mt-button
+        >删除群组</mt-button
+      >
+      <mt-button
+        v-else
+        type="danger"
+        class="my-button"
+        size="large"
+        @click="outGroup(group)"
+        >退出群组</mt-button
       >
     </mt-popup>
   </div>
@@ -166,7 +175,6 @@ export default {
       this.$axios.post("/group/add", this.group).then((res) => {
         let data = res.data;
         this.addVisible = false;
-        console.log("添加好友请求：", data);
         if (data.code != 200) {
           this.$toast({
             message: data.message,
@@ -192,8 +200,60 @@ export default {
       this.$axios
         .post("/group/join", { group_id: group.id, note: "申请加入" })
         .then((res) => {
-          console.log(res);
+          let data = res.data;
+          if (data.code == 200) {
+            this.searchVisible = false;
+            this.$toast({
+              message: data.data.message,
+              position: "center",
+              duration: 1000,
+            });
+          } else {
+            this.$toast({
+              message: data.message,
+              position: "center",
+              duration: 1000,
+            });
+          }
         });
+    },
+    outGroup(group) {
+      this.$axios.post("/group/out", { group_id: group.id }).then((res) => {
+        let data = res.data;
+          if (data.code == 200) {
+            this.infoVisible = false;
+            this.$toast({
+              message: data.data.message,
+              position: "center",
+              duration: 1000,
+            });
+          } else {
+            this.$toast({
+              message: data.message,
+              position: "center",
+              duration: 1000,
+            });
+          }
+      });
+    },
+    delGroup(group) {
+      this.$axios.post("/group/del", { group_id: group.id }).then((res) => {
+        let data = res.data;
+          if (data.code == 200) {
+            this.infoVisible = false;
+            this.$toast({
+              message: data.data.message,
+              position: "center",
+              duration: 1000,
+            });
+          } else {
+            this.$toast({
+              message: data.message,
+              position: "center",
+              duration: 1000,
+            });
+          }
+      });
     },
     // 进入会话
     joinMessage(group) {

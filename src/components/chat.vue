@@ -442,6 +442,7 @@ export default {
           localStorage.setItem("_noticeList", JSON.stringify(this.notice));
           if (msg.type != 200) {
             this.list.splice(this.listMap[msg.channel_id], 1);
+            localStorage.removeItem(msg.channel_id);
             this.sortList(1);
           }
           break;
